@@ -1,1 +1,500 @@
+Scenario:
+A banking application has multiple development teams. Every code change needs to go through automated build, testing, code-quality checks, security scanning, containerization and controlled deployment before reaching the production environment.
 
+Secure CI/CD Pipeline for Banking Application
+Overview:
+This project demonstrates a production-oriented Secure CI/CD pipeline for a sample banking application.
+The objective is to automate the application delivery lifecycle while integrating security and quality checks into the CI/CD process.
+The implementation is based on a generic banking application scenario and does not use any real customer, organization, production, or confidential data.
+Consideration: 
+Consider a banking application that provides services such as:
+	Customer login
+	Account information
+	Fund transfer
+	Transaction history
+	Payment processing
+	Customer profile management
+Multiple developers continuously contribute code to the application.
+The organization wants a CI/CD process where every code change is:
+
+1-Version controlled
+2-Automatically built
+3-Unit tested
+4-Checked for code quality
+5-Scanned for security vulnerabilities
+6-Packaged as a Docker image
+7-Scanned for container vulnerabilities
+8-Stored in a container registry
+9-Deployed automatically to a non-production environment
+10-Promoted to production only after required validations and approvals
+
+Architecture
+                         ┌──────────────────┐
+                         │    Developer     │
+                         └────────┬─────────┘
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │     GitHub       │
+                         │ Source Control   │
+                         └────────┬─────────┘
+                                  │
+                              Webhook
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │     Jenkins      │
+                         │    CI/CD         │
+                         └────────┬─────────┘
+                                  │
+                    ┌─────────────┼─────────────┐
+                    │             │             │
+                    ▼             ▼             ▼
+               Code Quality   Dependency    Unit Tests
+               SonarQube       Scan
+                    │             │             │
+                    └─────────────┼─────────────┘
+                                  │
+                              Quality Gate
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │   Docker Build   │
+                         └────────┬─────────┘
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │  Trivy Scan      │
+                         │ Container Scan   │
+                         └────────┬─────────┘
+                                  │
+                            Security Gate
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │ Container        │
+                         │ Registry         │
+                         └────────┬─────────┘
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │  Non-Production  │
+                         │    Environment   │
+                         └────────┬─────────┘
+                                  │
+                            Validation
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │ Approval / Gate  │
+                         └────────┬─────────┘
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │    Production    │
+                         │    Environment   │
+                         └──────────────────┘
+
+CI/CD Workflow
+
+The pipeline follows the below lifecycle:
+													Developer Commit
+													       ↓
+													GitHub
+													       ↓
+													Jenkins Trigger
+													       ↓
+													Checkout Source Code
+													       ↓
+													Build
+													       ↓
+													Unit Testing
+													       ↓
+													Code Quality Analysis
+													       ↓
+													Dependency Security Scan
+													       ↓
+													Quality / Security Gate
+													       ↓
+													Docker Image Build
+													       ↓
+													Container Vulnerability Scan
+													       ↓
+													Image Push to Registry
+													       ↓
+													Deploy to Non-Production
+													       ↓
+													Validation
+													       ↓
+													Production Approval
+													       ↓
+													Production Deployment
+DevSecOps Implementation
+
+Security is integrated throughout the software delivery lifecycle rather than being performed only before production deployment.
+
+1. Source Code Management
+
+								GitHub is used for:
+								
+																	Source code management
+																	Branch management
+																	Pull requests
+																	Code reviews
+																	Version control
+
+								Recommended branching approach:
+								
+																	main
+																	 │
+																	 ├── develop
+																	 │
+																	 ├── feature/*
+																	 │
+																	 └── bugfix/*
+								
+								Production deployment is restricted to approved branches and changes.
+
+2. Continuous Integration: Jenkins automatically starts the pipeline when a change is pushed to the repository.
+
+							The CI process performs:
+																	Source checkout
+																	Application build
+																	Dependency resolution
+																	Unit testing
+																	Code-quality validation
+
+A failed build or failed test prevents the pipeline from progressing.
+
+3. Static Application Security Testing
+
+SonarQube is used to analyze the source code for:
+
+Security vulnerabilities
+Bugs
+Code smells
+Security hotspots
+Maintainability issues
+
+The pipeline uses a Quality Gate to determine whether the build can continue.
+
+Code Analysis
+      │
+      ▼
+Quality Gate
+   ┌──┴──┐
+ PASS   FAIL
+  │       │
+  ▼       ▼
+Continue  Stop
+Pipeline  Pipeline
+4. Dependency Security
+
+Third-party application dependencies are scanned for known vulnerabilities.
+
+For example:
+
+Application
+     │
+     ▼
+Dependencies
+     │
+     ▼
+Vulnerability Database
+     │
+     ▼
+Severity Analysis
+
+Critical vulnerabilities can be configured to stop the pipeline.
+
+5. Docker Containerization
+
+After successful validation, the application is packaged as a Docker image.
+
+Example:
+
+Application Source
+       ↓
+     Build
+       ↓
+ Dockerfile
+       ↓
+ Docker Image
+
+Containerization provides a consistent runtime environment across development, testing and deployment environments.
+
+6. Container Security
+
+The Docker image is scanned using Trivy before it is pushed to the container registry.
+
+The scan identifies vulnerabilities in:
+
+OS packages
+Application dependencies
+Container libraries
+Known CVEs
+
+Example security policy:
+
+Critical → Pipeline Failure
+High     → Pipeline Failure / Review
+Medium   → Review
+Low      → Monitor
+
+The actual thresholds should be defined according to organizational security policies.
+
+7. Container Registry
+
+Only successfully validated images are pushed to the container registry.
+
+Example:
+
+Jenkins
+   ↓
+Security Scan
+   ↓
+PASS
+   ↓
+Container Registry
+   ↓
+Versioned Image
+
+Images should use immutable/versioned tags rather than relying only on latest.
+
+Example:
+
+banking-app:1.0.0
+banking-app:1.0.1
+banking-app:1.0.2
+8. Deployment
+
+The validated container image is deployed to the non-production environment.
+
+A typical deployment flow is:
+
+Container Registry
+       ↓
+Development / QA
+       ↓
+Validation
+       ↓
+Approval
+       ↓
+Production
+
+For Kubernetes-based deployment, Kubernetes manifests can manage:
+
+Deployment
+Service
+ConfigMap
+Secret
+Ingress
+Horizontal Pod Autoscaler
+
+Secrets Management
+
+Sensitive information must never be stored directly in GitHub repositories or Jenkinsfiles.
+
+Examples include:
+
+Database credentials
+API keys
+Cloud credentials
+Registry credentials
+SSH keys
+
+Credentials should be managed through:
+
+Jenkins Credentials Store
+Kubernetes Secrets
+AWS IAM
+AWS Secrets Manager
+Other enterprise secret-management solutions
+☁️ Cloud Deployment
+
+The same architecture can be extended to AWS.
+
+Example:
+
+                    AWS Cloud
+                       │
+              ┌────────┴────────┐
+              │                 │
+             ECR               EKS
+        Container Registry   Kubernetes
+              │                 │
+              └────────┬────────┘
+                       │
+                  Banking App
+
+Infrastructure can be provisioned using Terraform to implement Infrastructure as Code.
+ Monitoring & Observability
+
+After deployment, the application and infrastructure should be monitored.
+
+Possible monitoring components:
+
+Prometheus
+Grafana
+AWS CloudWatch
+ELK
+Application logs
+Infrastructure metrics
+
+Example:
+
+Banking Application
+        │
+        ├── Application Metrics
+        ├── Application Logs
+        └── Infrastructure Metrics
+                    │
+                    ▼
+             Monitoring Layer
+                    │
+                    ▼
+                Dashboard
+                    │
+                    ▼
+                  Alert
+Failure Handling
+
+The pipeline should prevent unsafe deployments.
+
+Examples:
+
+Build Failure
+Build Failed
+     ↓
+Pipeline Stopped
+     ↓
+No Deployment
+Security Failure
+Critical Vulnerability
+        ↓
+Security Gate Failed
+        ↓
+Pipeline Stopped
+        ↓
+No Image Promotion
+Deployment Failure
+Deployment Failure
+       ↓
+Health Check
+       ↓
+Rollback / Previous Version
+
+Example Production Deployment Strategy
+
+A controlled production deployment can follow:
+
+Developer
+   ↓
+Feature Branch
+   ↓
+Pull Request
+   ↓
+Code Review
+   ↓
+CI Pipeline
+   ↓
+Security Validation
+   ↓
+Docker Image
+   ↓
+QA Environment
+   ↓
+Functional Validation
+   ↓
+Production Approval
+   ↓
+Production Deployment
+   ↓
+Health Check
+   ↓
+Monitoring
+Technology Stack
+Area	Technology
+Source Control	Git / GitHub
+CI/CD	Jenkins
+Code Quality	SonarQube
+Dependency Security	OWASP Dependency Check
+Containerization	Docker
+Container Security	Trivy
+Container Registry	Nexus / AWS ECR
+Orchestration	Kubernetes
+Cloud	AWS
+Infrastructure as Code	Terraform
+Monitoring	Prometheus / Grafana / CloudWatch
+OS / Automation	Linux / Bash
+Repository Structure
+secure-cicd-pipeline/
+│
+├── app/
+│
+├── tests/
+│
+├── docker/
+│   └── Dockerfile
+│
+├── jenkins/
+│   └── Jenkinsfile
+│
+├── k8s/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── configmap.yaml
+│   └── ingress.yaml
+│
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
+│
+├── scripts/
+│
+└── README.md
+Key DevOps & DevSecOps Concepts Demonstrated
+
+This project demonstrates practical understanding of:
+
+Git-based development workflow
+CI/CD automation
+Jenkins pipeline design
+Automated testing
+Static code analysis
+Dependency vulnerability scanning
+Docker containerization
+Container security
+Security quality gates
+Artifact management
+Kubernetes deployment
+Cloud deployment
+Infrastructure as Code
+Secrets management
+Production deployment controls
+Monitoring and observability
+Failure handling and rollback
+Future Enhancements
+
+AWS ECR integration
+
+AWS EKS deployment
+
+Terraform-based infrastructure
+
+AWS Secrets Manager integration
+
+Prometheus and Grafana monitoring
+
+Centralized logging
+
+Image signing
+
+Policy-as-Code
+
+Automated rollback
+
+Blue-Green deployment
+
+Canary deployment
